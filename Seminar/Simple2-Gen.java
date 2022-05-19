@@ -1,6 +1,6 @@
 import org.sosy_lab.sv_benchmarks.Verifier;
 
-public class Simple3 {
+public class Simple2 {
     public static void main(String[] mainArgs) {
         int first = 55;
         String nondetStr = "dogbc"; // [JBMC Changed] [Original: Verifier.nondetString()]
@@ -31,3 +31,4 @@ public class Simple3 {
         }
     }
 }
+

@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <key attr.name="originFileName" attr.type="string" for="edge" id="originfile">
+    <default>&lt;command-line&gt;</default>
+  </key>
+  <key attr.name="invariant" attr.type="string" for="node" id="invariant"/>
+  <key attr.name="invariant.scope" attr.type="string" for="node" id="invariant.scope"/>
+  <key attr.name="isViolationNode" attr.type="boolean" for="node" id="violation">
+    <default>false</default>
+  </key>
+  <key attr.name="isEntryNode" attr.type="boolean" for="node" id="entry">
+    <default>false</default>
+  </key>
+  <key attr.name="isSinkNode" attr.type="boolean" for="node" id="sink">
+    <default>false</default>
+  </key>
+  <key attr.name="enterLoopHead" attr.type="boolean" for="edge" id="enterLoopHead">
+    <default>false</default>
+  </key>
+  <key attr.name="cyclehead" attr.type="boolean" for="node" id="cyclehead">
+    <default>false</default>
+  </key>
+  <key attr.name="threadId" attr.type="int" for="edge" id="threadId">
+    <default>0</default>
+  </key>
+  <key attr.name="createThread" attr.type="int" for="edge" id="createThread">
+    <default>0</default>
+  </key>
+  <key attr.name="sourcecodeLanguage" attr.type="string" for="graph" id="sourcecodelang"/>
+  <key attr.name="programFile" attr.type="string" for="graph" id="programfile"/>
+  <key attr.name="programHash" attr.type="string" for="graph" id="programhash"/>
+  <key attr.name="specification" attr.type="string" for="graph" id="specification"/>
+  <key attr.name="architecture" attr.type="string" for="graph" id="architecture"/>
+  <key attr.name="producer" attr.type="string" for="graph" id="producer"/>
+  <key attr.name="creationtime" attr.type="string" for="graph" id="creationtime"/>
+  <key attr.name="startline" attr.type="int" for="edge" id="startline"/>
+  <key attr.name="control" attr.type="string" for="edge" id="control"/>
+  <key attr.name="assumption" attr.type="string" for="edge" id="assumption"/>
+  <key attr.name="assumption.resultfunction" attr.type="string" for="edge" id="assumption.resultfunction"/>
+  <key attr.name="assumption.scope" attr.type="string" for="edge" id="assumption.scope"/>
+  <key attr.name="enterFunction" attr.type="string" for="edge" id="enterFunction"/>
+  <key attr.name="returnFromFunction" attr.type="string" for="edge" id="returnFrom"/>
+  <key attr.name="witness-type" attr.type="string" for="graph" id="witness-type"/>
+  <graph edgedefault="directed">
+    <data key="sourcecodelang">C</data>
+    <node id="sink"/>
+    <node id="552.69">
+      <data key="entry">true</data>
+    </node>
+    <edge source="552.69" target="161.107">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">8</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="161.107"/>
+    <edge source="161.107" target="162.108">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">8</data>
+      <data key="threadId">0</data>
+      <data key="assumption">mustNotContain = &amp;bc;</data>
+      <data key="assumption.scope">java::Simple.main:([Ljava/lang/String;)V</data>
+    </edge>
+    <node id="162.108"/>
+    <edge source="162.108" target="163.109">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">9</data>
+      <data key="threadId">0</data>
+      <data key="assumption">willContain = &amp;a;</data>
+      <data key="assumption.scope">java::Simple.main:([Ljava/lang/String;)V</data>
+    </edge>
+    <node id="163.109"/>
+    <edge source="163.109" target="164.110">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">10</data>
+      <data key="threadId">0</data>
+      <data key="assumption">thing = &amp;ab;</data>
+      <data key="assumption.scope">java::Simple.main:([Ljava/lang/String;)V</data>
+    </edge>
+    <node id="164.110"/>
+    <edge source="164.110" target="168.120">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">11</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="168.120"/>
+    <edge source="168.120" target="171.145">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">11</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="171.145"/>
+    <edge source="171.145" target="267.196">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">11</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="267.196"/>
+    <edge source="267.196" target="270.201">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">1</data>
+      <data key="threadId">0</data>
+      <data key="assumption">this = &amp;Simple@class_model;</data>
+      <data key="assumption.scope">java</data>
+    </edge>
+    <node id="270.201"/>
+    <edge source="270.201" target="278.208">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">1</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="278.208"/>
+    <edge source="278.208" target="280.213">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">1</data>
+      <data key="threadId">0</data>
+      <data key="assumption">$assertionsDisabled = false;</data>
+      <data key="assumption.scope">java::Simple.&lt;clinit&gt;:()V</data>
+    </edge>
+    <node id="280.213"/>
+    <edge source="280.213" target="282.218">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">2</data>
+      <data key="threadId">0</data>
+      <data key="assumption">nondetStr = &amp;generated__by__jbmc;</data>
+      <data key="assumption.scope">java::Simple.&lt;clinit&gt;:()V</data>
+    </edge>
+    <node id="282.218"/>
+    <edge source="282.218" target="284.223">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">3</data>
+      <data key="threadId">0</data>
+      <data key="assumption">nondetInt = 1;</data>
+      <data key="assumption.scope">java::Simple.&lt;clinit&gt;:()V</data>
+    </edge>
+    <node id="284.223"/>
+    <edge source="284.223" target="286.228">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">4</data>
+      <data key="threadId">0</data>
+      <data key="assumption">nondetFloat = 0x1.1c6a7ep+1f /* 2.222 */;</data>
+      <data key="assumption.scope">java::Simple.&lt;clinit&gt;:()V</data>
+    </edge>
+    <node id="286.228"/>
+    <edge source="286.228" target="177.259">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">5</data>
+      <data key="threadId">0</data>
+      <data key="assumption">nondetDouble = 3.333;</data>
+      <data key="assumption.scope">java::Simple.&lt;clinit&gt;:()V</data>
+    </edge>
+    <node id="177.259"/>
+    <edge source="177.259" target="182.301">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">11</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="182.301"/>
+    <edge source="182.301" target="185.322">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">11</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="185.322"/>
+    <edge source="185.322" target="187.327">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">11</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="187.327"/>
+    <edge source="187.327" target="199.333">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">12</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="199.333"/>
+    <edge source="199.333" target="201.337">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">12</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="201.337"/>
+    <edge source="201.337" target="204.361">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">12</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="204.361"/>
+    <edge source="204.361" target="213.367">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">12</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="213.367"/>
+    <edge source="213.367" target="216.373">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">13</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="216.373"/>
+    <edge source="216.373" target="218.377">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">13</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="218.377"/>
+    <edge source="218.377" target="221.401">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">13</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="221.401"/>
+    <edge source="221.401" target="226.406">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">13</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="226.406"/>
+    <edge source="226.406" target="228.411">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">13</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="228.411"/>
+    <edge source="228.411" target="230.416">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">13</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="230.416"/>
+    <edge source="230.416" target="232.418">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">13</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="232.418"/>
+    <edge source="232.418" target="236.424">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">13</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="236.424"/>
+    <edge source="236.424" target="237.427">
+      <data key="originfile">Simple.java</data>
+      <data key="startline">13</data>
+      <data key="threadId">0</data>
+    </edge>
+    <node id="237.427">
+      <data key="violation">true</data>
+    </node>
+  </graph>
+</graphml>
