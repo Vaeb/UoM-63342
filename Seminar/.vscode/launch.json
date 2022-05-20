@@ -11,7 +11,8 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "args": ["--unwind", "5", "--path", "src/Simple"],
+            // "args": ["--unwind", "5", "--path", "src/Simple"],
+            "args": ["--unwind", "5", "--path", "svc"],
             "program": "${workspaceFolder}/src/counterexample.js"
         }
     ]

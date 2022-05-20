@@ -50,7 +50,7 @@ const getSvcompExpected = () => {
         if (saysFail) numFail++;
         shouldPass[testName] = saysPass;
     });
-    console.log('Expected pass rate:', numPass, numFail);
+    // console.log('Expected pass rate:', numPass, numFail);
 }
 
 const hasFlag = (flags, flag) => {
@@ -83,11 +83,13 @@ const combineFlags = (...allFlags) => {
 const flagsToStr = (flags) => flags.flat(1).join(' ');
 
 let doLog = 2;
+let stopAfter = Infinity;
 
 const scriptFlags = {
     '--code-only': () => codeOnly = true,
     '--parse-only': () => parseOnly = true,
     '--log': (flag) => doLog = Number(args[args.indexOf(flag) + 1]),
+    '--stop': (flag) => stopAfter = Number(args[args.indexOf(flag) + 1]),
     '--path': (flag) => {
         const flagIdx = args.indexOf(flag);
         const cpFull = args[flagIdx + 1];
@@ -145,13 +147,23 @@ if (svc) getSvcompExpected();
 
 */
 
-let stop = false;
 let stop2 = false;
-let numF = 0;
 let numS = 0;
+let numF = 0;
 let numO = 0;
+let numGenS = 0;
+let numGenF = 0;
+let numGenMatches = 0;
+let numGenDiff = 0;
 let execPromises = [];
+let fileNum = 0;
+const times = [];
+const startF1 = +new Date();
 for (const [cpDir, srcDir, file, moniker] of filesData) {
+    const start1 = +new Date();
+    const nowTimes = [];
+    fileNum++;
+    const stop = fileNum >= stopAfter;
     // if (stop) break;
     // console.log('Trying:', moniker);
     let sepDirs = cpDir !== srcDir;
@@ -163,7 +175,7 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
     const src = fs.readFileSync(`${srcDir}/${file}.java`, { encoding: 'utf8' });
     let newSrc = src;
 
-    const possibleVariablesRegex = /\b(\w+) (\w+) *= *[^\s=]/g;
+    const possibleVariablesRegex = /\b(\w+) (\w+) *= *Verifier\.nondet\w+/g;
     const possibleVariables = [];
     let result;
     while (result = possibleVariablesRegex.exec(src)) {
@@ -176,6 +188,10 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
     const cmd = `${jbmc} ${file} --cp ${cpDir} ${jbmcFlags}`;
 
     execPromises.push(new Promise((resolve) => {
+        const end1 = +new Date();
+        nowTimes.push(end1 - start1);
+
+        const start2 = +new Date();
         const spawnCmd = spawn(jbmc, jbmcFlagsFlat); // spawn(jbmc, jbmcFlagsFlat);
         let trace = '';
         
@@ -190,6 +206,10 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
         });
 
         spawnCmd.on('close', (code) => {
+            const end2 = +new Date();
+            nowTimes.push(end2 - start2);
+
+            const start3 = +new Date();
             // console.log('Closing code:', code);
 
             if (stop2) return;
@@ -207,19 +227,20 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
                 console.log('Weird fail at:', fileLog);
             }
 
-            const testName = srcDir.match(/(\w+)\/?$/)[1];
+            // const testName = srcDir.match(/(\w+)\/?$/)[1];
+            const testName = moniker;
             const shouldPassNow = shouldPass[testName];
 
             if (svc) {
                 if (shouldPassNow === undefined) {
-                    console.log('MISSING TEST:', testName);
+                    console.log('MISSING TEST:', testName, moniker, srcDir);
                 } else {
                     if (shouldPassNow != didPass) { // Only has false-fails
-                        console.log('Wrong test result:', testName, didPass);
-                        // stop = true;
+                        // console.log('Wrong test result:', testName, didPass);
+                        // stopAfter = 0;
                         // stop2 = true;
                     } else {
-                        console.log('Correct test result:', testName);
+                        // console.log('Correct test result:', testName);
                     }
                 }
             }
@@ -270,11 +291,18 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
             const regexKeys = Object.keys(regexLookup);
             const valueStack = [];
             const posToValue = {};
+            const nowTimesVars = [];
 
             for (const variable of possibleVariables) {
+                const startV1 = +new Date();
+
+                if (doLog >= 5) console.log('Variable', variable);
                 const { varType, varName } = variable;
                 const varNameMatch = trace.match(new RegExp(/\b_name_=/.source.replace('_name_', esc(varName))));
-                if (!varNameMatch) continue;
+                if (!varNameMatch) {
+                    if (doLog >= 5) console.log('Failed to find var');
+                    continue;
+                }
 
                 const varStack = [varName, varNameMatch ? varNameMatch.index : -1];
                 valueStack.push(varStack);
@@ -375,8 +403,18 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
 
                     if (oldValue == value) return match;
                     return `${oldSetter}${value}${after} // [JBMC Changed] [Original: ${oldValue}]`;
-                })
+                });
+
+                const endV1 = +new Date();
+                nowTimesVars.push(endV1 - startV1);
             }
+
+            nowTimes._vars = nowTimesVars;
+
+            const end3 = +new Date();
+            nowTimes.push(end3 - start3);
+
+            const start4 = +new Date();
 
             if (doLog >= 3) {
                 console.log('valueStack:');
@@ -389,19 +427,39 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
                 console.log(newSrc);
             }
 
+            const handleProcessEnd = () => {
+                const end4 = +new Date();
+                nowTimes.push(end4 - start4);
+                nowTimes._total = nowTimes.reduce((acc, num) => acc + num, 0);
+                times.push(nowTimes);
+                resolve(true);
+            };
+
             const genFileDir = `${genDir}${moniker !== file ? `/${moniker}` : ''}`;
             const genFilePath = `${genFileDir}/${file}.java`;
             fs.mkdir(genFileDir, () => {
                 fs.writeFile(genFilePath, newSrc, (err) => {
-                    if (err) return console.log('FILE WRITE ERROR:', err);
-                    console.log('Wrote file');
+                    if (err) {
+                        console.log('FILE WRITE ERROR:', err);
+                        return handleProcessEnd();
+                    }
+                    // console.log('Wrote file:', moniker);
                     exec(`javac ${genFilePath} ${verifierPath} -g`, (compErr, compOut, compStdErr) => {
-                        if (compErr) return console.log('JAVAC COMPILE ERROR:', javacErr);
-                        console.log('Compiled java class');
-                        exec(`java -cp ${genDir} -ea ${file}`, (javaErr, javaOut, javaStdErr) => {
+                        // if (compErr) return console.log('JAVAC COMPILE ERROR:', compErr);
+                        if (compErr) return handleProcessEnd();
+                        // console.log('Compiled java class:', moniker);
+                        exec(`java -cp ${genFileDir}${svc ? ':/home/vaeb/sv-benchmarks/java/common/' : ''} -ea ${file}`, (javaErr, javaOut, javaStdErr) => {
+                            // console.log(javaErr);
+                            // console.log(javaOut);
+                            // console.log(javaStdErr);
+                            // console.log(/\bjava\.lang\.AssertionError\b/.test(String(javaStdErr)));
                             const genAssertsPass = !/\bjava\.lang\.AssertionError\b/.test(String(javaStdErr));
-                            console.log(moniker, genAssertsPass, didPass, shouldPassNow);
-                            resolve(true);
+                            if (genAssertsPass) numGenS++;
+                            else numGenF++;
+                            if (genAssertsPass == shouldPassNow) numGenMatches++;
+                            else numGenDiff++;
+                            // console.log(moniker, genAssertsPass, didPass, shouldPassNow);
+                            handleProcessEnd();
                         });
                     });
                 });
@@ -412,10 +470,83 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
     if (stop) break;
 }
 
+const fixNum = (num, whole) => whole ? String(num) : num.toFixed(2);
+
+const formatTime = (num, whole) => {
+    if (num < 1000) return `${fixNum(num)}ms`;
+    if (num < 1000 * 60) return `${fixNum(num / 1000)} seconds`;
+    return `${fixNum(num / 1000 / 60)} minutes`;
+};
+
 Promise.all(execPromises).then(() => {
+    const endF1 = +new Date();
+
     const fileType = svc ? 'SV-COMP tests' : 'java files';
-    console.log(`Number of ${fileType} ran:`, filesData.length);
-    console.log(`Number of ${fileType} with a result of VERIFICATION FAILED: ${numF}`);
-    console.log(`Number of ${fileType} with a result of VERIFICATION SUCCESSFUL: ${numS}`);
-    console.log(`Number of ${fileType} on which verification failed: ${numO}`);
+
+    // console.log(times);
+
+    let totalTime = 0;
+    let totalTimeSetup = 0;
+    let totalTimeJbmc = 0;
+    let totalTimeGenerating = 0;
+    let totalTimeWriting = 0;
+    for (const nowTimes of times) {
+        totalTime += nowTimes._total;
+        totalTimeSetup += nowTimes[0];
+        totalTimeJbmc += nowTimes[1];
+        totalTimeGenerating += nowTimes[2];
+        totalTimeWriting += nowTimes[3];
+    }
+
+    const elapsedTime = endF1 - startF1;
+    const avgTimeTotal = totalTime / times.length;
+    const avgTimeElapsed = elapsedTime / times.length;
+
+    const avgTimeSetup = totalTimeSetup / times.length;
+    const avgTimeJbmc = totalTimeJbmc / times.length;
+    const avgTimeGenerating = totalTimeGenerating / times.length;
+    const avgTimeWriting = totalTimeWriting / times.length;
+
+    const percSetup = totalTimeSetup / totalTime * 100;
+    const percJbmc = totalTimeJbmc / totalTime * 100;
+    const percGenerating = totalTimeGenerating / totalTime * 100;
+    const percWriting = totalTimeWriting / totalTime * 100;
+
+    const totalArr = [totalTimeSetup, totalTimeJbmc, totalTimeGenerating, totalTimeWriting];
+    const avgArr = [avgTimeSetup, avgTimeJbmc, avgTimeGenerating, avgTimeWriting];
+    const parallelMult = totalTime / elapsedTime;
+    const padTotal = Math.max(...totalArr.map(n => formatTime(n, true).length));
+    const padTotalEl = Math.max(...totalArr.map(n => formatTime(n / parallelMult).length));
+    const padAvg = Math.max(...avgArr.map(n => formatTime(n).length));
+    const padAvgEl = Math.max(...avgArr.map(n => formatTime(n / parallelMult).length));
+
+    console.log('');
+
+    console.log(`Number of ${fileType} ran:`.padStart(87), filesData.length);
+    console.log('---'.padStart(87))
+    // console.log(`Number of ${fileType} with a result of VERIFICATION FAILED: ${numF}`);
+    // console.log(`Number of ${fileType} with a result of VERIFICATION SUCCESSFUL: ${numS}`);
+    console.log(`Number of ${fileType} expected to run successfully:`.padStart(87), numPass);
+    console.log(`Number of ${fileType} expected to fail due to assertions:`.padStart(87), numFail);
+    console.log('---'.padStart(87))
+    console.log(`Number of ${fileType} for which the generated Java ran successfully:`.padStart(87), numGenS);
+    console.log(`Number of ${fileType} for which the generated Java failed due to assertions:`.padStart(87), numGenF);
+    console.log('---'.padStart(87))
+    console.log(`Number of ${fileType} for tests with a correct outcome from generated Java files:`.padStart(87), numGenMatches);
+    console.log(`Number of ${fileType} for tests with an incorrect outcome from generated Java files:`.padStart(87), numGenDiff);
+    console.log('');
+    console.log('---'.padStart(87))
+    console.log('');
+    console.log(`Total processing time:`.padStart(87), `${formatTime(totalTime, true)}`);
+    console.log(`Total elapsed time:`.padStart(87), `${formatTime(elapsedTime, true)}`);
+    console.log(`Average processing time per test:`.padStart(87), `${formatTime(avgTimeTotal)}`);
+    console.log(`Average elapsed time per test:`.padStart(87), `${formatTime(avgTimeElapsed)}`);
+    console.log('');
+    console.log(`Time taken for initial setup:`.padStart(87), `\n`, `${formatTime(totalTimeSetup, true)}`.padStart(padTotal), `total (processing)`, `|`, `${formatTime((totalTimeSetup / parallelMult))}`.padStart(padTotalEl), `total (elapsed)`, `|`, `${formatTime(avgTimeSetup)}`.padStart(padAvg), `average (processing)`, `|`, `${formatTime((avgTimeSetup / parallelMult))}`.padStart(padAvgEl), `average (elapsed)`, `|`, `${percSetup.toFixed(2)}%`.padStart(6));
+    console.log('');
+    console.log(`Time taken for running JBMC:`.padStart(87), `\n`, `${formatTime(totalTimeJbmc, true)}`.padStart(padTotal), `total (processing)`, `|`, `${formatTime((totalTimeJbmc / parallelMult))}`.padStart(padTotalEl), `total (elapsed)`, `|`, `${formatTime(avgTimeJbmc)}`.padStart(padAvg), `average (processing)`, `|`, `${formatTime((avgTimeJbmc / parallelMult))}`.padStart(padAvgEl), `average (elapsed)`, `|`, `${percJbmc.toFixed(2)}%`.padStart(6));
+    console.log('');
+    console.log(`Time taken for generating a new Java solution based on the counterexample:`.padStart(87), `\n`, `${formatTime(totalTimeGenerating, true)}`.padStart(padTotal), `total (processing)`, `|`, `${formatTime((totalTimeGenerating / parallelMult))}`.padStart(padTotalEl), `total (elapsed)`, `|`, `${formatTime(avgTimeGenerating)}`.padStart(padAvg), `average (processing)`, `|`, `${formatTime((avgTimeGenerating / parallelMult))}`.padStart(padAvgEl), `average (elapsed)`, `|`, `${percGenerating.toFixed(2)}%`.padStart(6));
+    console.log('');
+    console.log(`Time taken for writing the new Java solution to a file, compiling it, and executing it:`.padStart(87), `\n`, `${formatTime(totalTimeWriting, true)}`.padStart(padTotal), `total (processing)`, `|`, `${formatTime((totalTimeWriting / parallelMult))}`.padStart(padTotalEl), `total (elapsed)`, `|`, `${formatTime(avgTimeWriting)}`.padStart(padAvg), `average (processing)`, `|`, `${formatTime((avgTimeWriting / parallelMult))}`.padStart(padAvgEl), `average (elapsed)`, `|`, `${percWriting.toFixed(2)}%`.padStart(6));
 });
