@@ -1,6 +1,6 @@
 # UoM-63342
 
-The program will generate new Java files to reproduce vulnerabilities discovered by JBMC (Java Bounded Model Checking). Works successfully, although there are limitations to the acceptable nondeterministic data types. Current acceptable nondeterministic data types:
+The program that I have developed for the seminar will generate new Java files to reproduce vulnerabilities discovered by JBMC (Java Bounded Model Checking). Works successfully, although there are limitations to the acceptable nondeterministic data types. Current acceptable nondeterministic data types:
 - Ints
 - Floats
 - Doubles
