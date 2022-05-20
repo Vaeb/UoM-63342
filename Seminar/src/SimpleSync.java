@@ -6,7 +6,7 @@
  *     directory: regression/cbmc-java/synchronized
  * The benchmark was taken from the repo: 24 January 2018
  */
-public class Main1 {
+public class SimpleSync {
   public static void main(String[] args) {
     final Object o = null;
     System.out.println("trying");
