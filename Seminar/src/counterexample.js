@@ -9,6 +9,7 @@ const { spawn, exec } = require('child_process');
 // ~/cbmc-git/jbmc/src/jbmc/jbmc Main --unwind 5 --cp ~/sv-benchmarks/java/jbmc-regression/synchronized
 // ~/cbmc-git/jbmc/src/jbmc/jbmc Simple --nondet-static --max-nondet-string-length 5 --unwind 5 --cp ./bin --trace
 
+// javac ./src/Simple2.java /home/vaeb/sv-benchmarks/java/common/org/sosy_lab/sv_benchmarks/Verifier.java -g
 // javac /home/vaeb/sv-benchmarks/java/jbmc-regression/ArrayIndexOutOfBoundsException1/Main.java /home/vaeb/sv-benchmarks/java/common/org/sosy_lab/sv_benchmarks/Verifier.java -g
 // java -cp /home/vaeb/sv-benchmarks/java/jbmc-regression/ArrayIndexOutOfBoundsException1:/home/vaeb/sv-benchmarks/java/common/ Main
 
@@ -33,6 +34,8 @@ const getSvcompFiles = () =>
 
 let numPass = 0;
 let numFail = 0;
+let numPassExpected = 0;
+let numFailExpected = 0;
 let shouldPass = {};
 
 const getSvcompExpected = () => {
@@ -83,12 +86,14 @@ const combineFlags = (...allFlags) => {
 const flagsToStr = (flags) => flags.flat(1).join(' ');
 
 let doLog = 2;
+let startAt = 0;
 let stopAfter = Infinity;
 
 const scriptFlags = {
     '--code-only': () => codeOnly = true,
     '--parse-only': () => parseOnly = true,
     '--log': (flag) => doLog = Number(args[args.indexOf(flag) + 1]),
+    '--start': (flag) => startAt = Number(args[args.indexOf(flag) + 1]) - 1,
     '--stop': (flag) => stopAfter = Number(args[args.indexOf(flag) + 1]),
     '--path': (flag) => {
         const flagIdx = args.indexOf(flag);
@@ -156,12 +161,15 @@ let numGenF = 0;
 let numGenMatches = 0;
 let numGenDiff = 0;
 let execPromises = [];
+let startNum = 0;
 let fileNum = 0;
 const times = [];
 const startF1 = +new Date();
 for (const [cpDir, srcDir, file, moniker] of filesData) {
     const start1 = +new Date();
     const nowTimes = [];
+    startNum++;
+    if (startNum < startAt) continue;
     fileNum++;
     const stop = fileNum >= stopAfter;
     // if (stop) break;
@@ -230,6 +238,11 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
             // const testName = srcDir.match(/(\w+)\/?$/)[1];
             const testName = moniker;
             const shouldPassNow = shouldPass[testName];
+            if (shouldPassNow) {
+                numPassExpected++;
+            } else {
+                numFailExpected++;
+            }
 
             if (svc) {
                 if (shouldPassNow === undefined) {
@@ -280,12 +293,11 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
 
             */
 
-            const regexLookup = { // (?![\s\S]*\b\1)
+            const regexLookup = {
                 setData: { reg: /\b(_name_\.data=)(\w+)/.source, lookup: true, priority: 3 },
                 equalsWithComment: { reg: /\b(_name_=)[^\n\(]+ \/\* (.*?) \*\/ /.source, lookup: false, priority: 2 },
-                equals: { reg: /\b(_name_)=(?!&|\1\b)([^\n\(]+)/.source, lookup: false, priority: 1 }, // May need to be global?
+                equals: { reg: /\b(_name_)=(?!&|\1\b)([^\n\(]+)/.source, lookup: false, priority: 1 },
                 equalsPointer: { reg: /\b(_name_=&)([^\n\(]+)/.source, lookup: true, priority: 1 },
-                // /\b(_name_=&)(\w+)/.source,
             };
 
             const regexKeys = Object.keys(regexLookup);
@@ -329,7 +341,6 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
                             }
                             currentPrio = priority;
                             const newValue = result[2].trim();
-                            // if (newValue === 'null') continue;
                             const newIndex = result.index;
                             posToValue[newIndex] = newValue;
                             if (childrenObj[newIndex]) {
@@ -337,10 +348,8 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
                                 console.log('CURR:', childrenObj[newIndex]);
                                 console.log('NEW:', newValue);
                             }
-                            // console.log(name, newValue);
                             if (lookup) {
                                 const child = [newValue, newIndex];
-                                // console.log(444, child);
                                 childrenObj[newIndex] = child;
                                 futureStacks.push([child, newValue]);
                             } else {
@@ -350,9 +359,7 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
                     }
 
                     lookupVariables.push(...futureStacks);
-                    nowStack.push(...Object.values(childrenObj)); // You have to push the found arrays onto parentStack in the block, and include the _name on them
-                    // console.log(999, childrenObj, Object.values(childrenObj));
-                    // console.log(9999, valueStack);
+                    nowStack.push(...Object.values(childrenObj));
                 }
 
                 const deepDelve = (arr) => {
@@ -369,7 +376,8 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
                     } else if (varType === 'double') {
                         value = varStack[2];
                     } else if (varType === 'String') {
-                        if (Array.isArray(varStack[3]) && Array.isArray(varStack[3][2]) && varStack[3][2][0] === 'null') { // is non_det
+                        // Is it non deterministic?
+                        if (Array.isArray(varStack[3]) && Array.isArray(varStack[3][2]) && varStack[3][2][0] === 'null') {
                             value = varStack[3][3];
                         } else {
                             value = varStack[3];
@@ -393,10 +401,6 @@ for (const [cpDir, srcDir, file, moniker] of filesData) {
                     return rawValue;
                 }
 
-                // console.log(varStack);
-                // console.log('pick', pickValueByType(varType, varStack));
-
-                // console.log(newSrc);
                 newSrc = newSrc.replace(new RegExp(`\\b(${varType} +${varName} *= *)(?![=])([^;]+)(.*?)$`, 'm'), (match, oldSetter, oldValue, after) => {
                     const rawValue = pickValueByType(varType, varStack);
                     const value = formatValueByType(varType, rawValue);
@@ -479,9 +483,11 @@ const formatTime = (num, whole) => {
 };
 
 Promise.all(execPromises).then(() => {
+    if (parseOnly) return;
+
     const endF1 = +new Date();
 
-    const fileType = svc ? 'SV-COMP tests' : 'java files';
+    const fileType = svc || filesData[0][0].includes('sv-benchmarks') ? 'SV-COMP tests' : 'java files';
 
     // console.log(times);
 
@@ -522,18 +528,19 @@ Promise.all(execPromises).then(() => {
 
     console.log('');
 
-    console.log(`Number of ${fileType} ran:`.padStart(87), filesData.length);
+    console.log(`Number of ${fileType} ran:`.padStart(87), fileNum);
     console.log('---'.padStart(87))
     // console.log(`Number of ${fileType} with a result of VERIFICATION FAILED: ${numF}`);
     // console.log(`Number of ${fileType} with a result of VERIFICATION SUCCESSFUL: ${numS}`);
-    console.log(`Number of ${fileType} expected to run successfully:`.padStart(87), numPass);
-    console.log(`Number of ${fileType} expected to fail due to assertions:`.padStart(87), numFail);
+    console.log(`Number of ${fileType} expected to run successfully:`.padStart(87), numPassExpected);
+    console.log(`Number of ${fileType} expected to fail due to assertions:`.padStart(87), numFailExpected);
     console.log('---'.padStart(87))
     console.log(`Number of ${fileType} for which the generated Java ran successfully:`.padStart(87), numGenS);
     console.log(`Number of ${fileType} for which the generated Java failed due to assertions:`.padStart(87), numGenF);
     console.log('---'.padStart(87))
     console.log(`Number of ${fileType} for tests with a correct outcome from generated Java files:`.padStart(87), numGenMatches);
     console.log(`Number of ${fileType} for tests with an incorrect outcome from generated Java files:`.padStart(87), numGenDiff);
+    if (codeOnly) return;
     console.log('');
     console.log('---'.padStart(87))
     console.log('');
